@@ -1,6 +1,6 @@
 import pygame
 
-class Gamepad:
+class GamepadClass:
     def __init__(self):
         # Initialize pygame's joystick support
         pygame.init()

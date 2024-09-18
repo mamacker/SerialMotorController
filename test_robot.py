@@ -16,9 +16,9 @@ def motor_exercise(robot, controller):
 
     # Test MOTOR_B with various commands
     robot.set_value(controller, 'velocity_b', 1)  # Forward
-    time.sleep(2)
+    time.sleep(5)
     robot.set_value(controller, 'velocity_b', -1)  # Reverse
-    time.sleep(2)
+    time.sleep(5)
     robot.set_value(controller, 'velocity_b', 0)  # Brake
     time.sleep(2)
 
@@ -26,9 +26,9 @@ def motor_exercise(robot, controller):
     for i in range(-1, 1, 10):
         pwm_value = i / 100.0  # Assuming velocity is from -1 to 1
         robot.set_value(controller, 'velocity_a', pwm_value)
-        time.sleep(1)
+        time.sleep(5)
         robot.set_value(controller, 'velocity_a', -pwm_value)
-        time.sleep(1)
+        time.sleep(5)
         robot.set_value(controller, 'velocity_a', 0)  # Brake
         time.sleep(2)
         robot.set_value(controller, 'velocity_b', 0)  # Brake

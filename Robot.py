@@ -51,7 +51,7 @@ class MotorController:
         """Closes the serial connection."""
         self.ser.close()
 
-class Robot:
+class RobotClass:
     def __init__(self):
         self.controllers = {}
 
@@ -150,6 +150,9 @@ class Robot:
         """Closes all motor controllers' serial connections."""
         for controller in self.controllers.values():
             controller.close()
+
+    def sleep(self, duration):
+        time.sleep(duration)
 
 # Example usage:
 if __name__ == '__main__':

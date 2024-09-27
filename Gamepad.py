@@ -54,7 +54,7 @@ class GamepadClass:
         return input_map[name_of_input]
     
 # Example usage:
-# gamepad = Gamepad()
+# gamepad = GamepadClass()
 # print(gamepad.get_value("joystick_left_x"))
 # print(gamepad.get_value("button_a"))
 

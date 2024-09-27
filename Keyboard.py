@@ -44,7 +44,7 @@ class KeyboardClass:
 
 # Example usage:
 if __name__ == "__main__":
-    kb = Keyboard()
+    kb = KeyboardClass()
 
     print("Press keys on the keyboard. Use Ctrl+C to exit.")
     try:

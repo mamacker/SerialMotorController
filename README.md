@@ -19,13 +19,24 @@ You can install the required Python packages using pip:
 pip install pygame pyserial pynput
 ```
 
-### 2. Determine the COM Port
+### 2. Determine the COM Port on Windows
 
 1. Open **Device Manager** by right-clicking on the Windows Start menu and selecting **Device Manager**.
 2. In Device Manager, expand the **Ports (COM & LPT)** section.
 3. Look for a device labeled **USB Serial Device**. Note the COM port number (e.g., COM3).
 
 This is the COM port you’ll need to use in your code.
+
+#### The serial port on Mac
+1. Open settings and navigate to ***Security and Privacy***
+2. Open ***input monitoring***
+3. Enable the terminal for input monitoring
+
+4. Re-open terminal (you may need to close it)
+5. Change directory to /dev/ and list the "usbmodems
+```bash
+ls /dev/cu.usbmodem*
+```
 
 ### 3. Test Simple Communications
 

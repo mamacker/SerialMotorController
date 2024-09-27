@@ -157,7 +157,7 @@ class RobotClass:
 
 # Example usage:
 if __name__ == '__main__':
-    robot = Robot()
+    robot = RobotClass()
     
     # Find motor controllers automatically
     robot.find_motor_controllers()

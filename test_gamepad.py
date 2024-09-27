@@ -2,7 +2,7 @@ import time
 from Gamepad import GamepadClass  # Import the Gamepad class from Gamepad.py
 
 def watch_gamepad():
-    gamepad = Gamepad()
+    gamepad = GamepadClass()
 
     while True:
         try:

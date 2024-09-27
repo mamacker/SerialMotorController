@@ -38,7 +38,9 @@ class MotorController:
             command = f"{motor} {action} {pwm_value}\n"
         else:
             command = f"{motor} {action}\n"
-        
+
+        #Check to see if this command should actually be sent
+        #This is to prevent sending the same command multiple times 
         if ( motor == "MOTOR_A" ):
             if ( self.last_command_a == command ):
                 return
@@ -160,7 +162,7 @@ class RobotClass:
             value = 1
         elif (value < -1):
             value = -1
-            
+
         return value * 100
 
     def close(self):

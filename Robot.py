@@ -154,8 +154,13 @@ class RobotClass:
 
     def map_pwm(self, value, min_pwm=1, max_pwm=100):
         """
-        Maps the velocity values from the range of -1 to 1 to PWM values (1 to 255).
+        Maps the velocity values from the range of -1 to 1 to PWM values (1 to 100).
         """
+        if (value > 1):
+            value = 1
+        elif (value < -1):
+            value = -1
+            
         return value * 100
 
     def close(self):
@@ -177,11 +182,11 @@ if __name__ == '__main__':
         # Now you can set values for controllers that were automatically found
         for controller_id in robot.controllers:
             print(f"Setting values for {controller_id}")
-            robot.set_value(controller_id, "velocity_a", 50)  # MOTOR_A forward with 50% power
+            robot.set_value(controller_id, "velocity_a", -1)  # MOTOR_A forward with 50% power
             time.sleep(2)
-            robot.set_value(controller_id, "velocity_b", -30)  # MOTOR_B reverse with 30% power
+            robot.set_value(controller_id, "velocity_b", -1)  # MOTOR_B reverse with 30% power
             robot.set_value(controller_id, "invert_velocity_a", 1)  # Invert MOTOR_A direction
-            robot.set_value(controller_id, "velocity_a", 50)  # MOTOR_A now reversed
+            robot.set_value(controller_id, "velocity_a", 1)  # MOTOR_A now reversed
 
     except KeyboardInterrupt:
         print("Exercise interrupted")

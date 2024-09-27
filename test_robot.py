@@ -1,5 +1,5 @@
 import time
-from Robot import Robot  # Import the Robot class from Robot.py
+from Robot import RobotClass  # Import the Robot class from Robot.py
 
 def motor_exercise(robot, controller):
     # Test MOTOR_A with various commands
@@ -35,7 +35,7 @@ def motor_exercise(robot, controller):
         time.sleep(2)
 
 if __name__ == '__main__':
-    robot = Robot()  # Create an instance of the Robot class
+    robot = RobotClass()  # Create an instance of the Robot class
     robot.find_motor_controllers();
     try:
         # Now you can set values for controllers that were automatically found

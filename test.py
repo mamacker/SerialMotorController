@@ -2,7 +2,7 @@ import serial
 import time
 
 # Open a serial connection (adjust 'COM3' for Windows or '/dev/ttyUSB0' for Linux/macOS)
-ser = serial.Serial('/dev/ttyACM0', 460800, timeout=1)
+ser = serial.Serial('COM5', 460800, timeout=1)
 
 def send_command(command):
     ser.write((command + '\n').encode())  # Send the command to the ESP32
@@ -11,6 +11,8 @@ def send_command(command):
     print(response)
 
 def motor_exercise():
+    # Test MOTOR_A with various commands
+    send_command('GET_NAME')
     # Test MOTOR_A with various commands
     send_command('MOTOR_A FORWARD 50')
     time.sleep(2)  # Let the motor run for 2 seconds

@@ -1,5 +1,5 @@
 import time
-from Gamepad import Gamepad  # Import the Gamepad class from Gamepad.py
+from Gamepad import GamepadClass  # Import the Gamepad class from Gamepad.py
 
 def watch_gamepad():
     gamepad = Gamepad()

@@ -55,7 +55,7 @@ class RobotClass:
     def __init__(self):
         self.controllers = {}
 
-    def find_motor_controllers(self, baudrate=460800, timeout=1):
+    def find_motor_controllers(self, baudrate=460800, timeout=.2):
         """
         Scans all available serial ports and checks if a motor controller is connected.
         If a valid motor controller is found, it stores the controller and its name.
@@ -64,7 +64,7 @@ class RobotClass:
         for port in available_ports:
             try:
                 print(f"Checking port {port.device}...")
-                ser = serial.Serial(port.device, baudrate, timeout=timeout)
+                ser = serial.Serial(port.device, baudrate, timeout=timeout, write_timeout=timeout)
                 ser.flush()
 
                 # Send a GET_NAME command to check if it's a motor controller
@@ -77,6 +77,7 @@ class RobotClass:
                         # Extract the name from the response
                         name = response.split(":")[-1].strip()
                         print(f"Motor controller found on {port.device}, name: {name}")
+                        ser.close()
                         # Store the controller
                         self.add_motor_controller(name, port.device, baudrate, timeout)
                 ser.close()

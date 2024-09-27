@@ -11,11 +11,12 @@ Make sure you have the following installed:
 - **Python 3**
 - **Pygame**
 - **PySerial**
+- **Pynput**
 
 You can install the required Python packages using pip:
 
 ```bash
-pip install pygame pyserial
+pip install pygame pyserial pynput
 ```
 
 ### 2. Determine the COM Port

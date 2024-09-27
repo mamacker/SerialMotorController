@@ -21,6 +21,11 @@ void setup() {
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
 
+  analogWrite(IN1, 0);
+  analogWrite(IN2, 0);
+  analogWrite(IN3, 0);
+  analogWrite(IN4, 0);
+  
   // Initialize Preferences
   preferences.begin("motor-control", false);  // "motor-control" is the namespace, false = RW mode
 

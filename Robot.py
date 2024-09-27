@@ -10,6 +10,8 @@ class MotorController:
         # Inversion flags for motors A and B
         self.invert_motor_a = False
         self.invert_motor_b = False
+        self.last_command_a = None
+        self.last_command_b = None
 
     def send_command(self, command):
         """Sends a command to the motor controller via serial."""
@@ -36,6 +38,15 @@ class MotorController:
             command = f"{motor} {action} {pwm_value}\n"
         else:
             command = f"{motor} {action}\n"
+        
+        if ( motor == "MOTOR_A" ):
+            if ( self.last_command_a == command ):
+                return
+            self.last_command_a = command
+        else:
+            if ( self.last_command_b == command ):
+                return
+            self.last_command_b = command 
         self.send_command(command)
 
     def set_invert(self, motor, invert):
@@ -141,11 +152,11 @@ class RobotClass:
         else:
             print(f"Invalid motor property: {property_name}")
 
-    def map_pwm(self, value, min_pwm=1, max_pwm=255):
+    def map_pwm(self, value, min_pwm=1, max_pwm=100):
         """
         Maps the velocity values from the range of -1 to 1 to PWM values (1 to 255).
         """
-        return value * 255
+        return value * 100
 
     def close(self):
         """Closes all motor controllers' serial connections."""

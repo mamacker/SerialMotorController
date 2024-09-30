@@ -33,9 +33,13 @@ This is the COM port you’ll need to use in your code.
 3. Enable the terminal for input monitoring
 
 4. Re-open terminal (you may need to close it)
-5. Change directory to /dev/ and list the "usbmodems
+5. Change directory to /dev/ and list the "usbmodems"
 ```bash
-ls /dev/cu.usbmodem*
+ls /dev/cu.*
+```
+You should see similar output:
+```bash
+/dev/cu.Bluetooth-Incoming-Port    /dev/cu.usbmodem14792    /dev/cu.SLAB_USBtoUART      /dev/cu.SLAB_USBtoUART7
 ```
 
 ### 3. Test Simple Communications

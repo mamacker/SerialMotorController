@@ -44,10 +44,18 @@ You should see similar output:
 
 ### 3. Test Simple Communications
 
-1. Open `test.py` in your code editor.
-2. Replace the COM port (or `/dev/tty***` on Linux/Mac) with the appropriate COM port for your device.
-3. Save `test.py`.
-4. Run the test script to verify communication with the motor controller:
+#### Try to auto find the port.
+1. Easy test is to run test_robot.py.  This will auto-find your com ports.
+2. Run it:
+   ```bash
+   python3 test_robot.py
+   ```
+#### Direct edit of a test.
+1. More direct editing - in case you know one of the motor controller ports.
+2. Open `test.py` in your code editor.
+3. Replace the COM port (or `/dev/tty***` on Linux/Mac) with the appropriate COM port for your device.
+4. Save `test.py`.
+5. Run the test script to verify communication with the motor controller:
 
    ```bash
    python3 ./test.py

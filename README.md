@@ -37,7 +37,7 @@ This is the COM port you’ll need to use in your code.
 ```bash
 ls /dev/cu.*
 ```
-You should see similar output:
+You should see similar output (you want the one that has "usbmodem"):
 ```bash
 /dev/cu.Bluetooth-Incoming-Port    /dev/cu.usbmodem14792    /dev/cu.SLAB_USBtoUART      /dev/cu.SLAB_USBtoUART7
 ```

@@ -2,8 +2,8 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 
-const char* ssid = "YOUR_SSID";
-const char* password = "YOU_PASSWORD";
+String ssid = "DEFAULT_SSID";
+String password = "DEFAULT_PASSWORD";
 
 // Define the H-bridge control pins
 const int IN1 = 22;  // IN1 pin for MOTOR-A
@@ -17,11 +17,10 @@ const int NAME_LENGTH = 10;  // Length of the random name
 
 WiFiServer server(80);  // Create a server on port 80
 
+bool useWiFi = false;  // Flag to enable/disable WiFi functionality
+
 void setup() {
-  Serial.begin(460800);  // Changed to a more common baud rate
-  while (!Serial) {
-    ; // Wait for serial port to connect. Needed for native USB port only
-  }
+  Serial.begin(460800);
   Serial.println("Initializing...");
 
   // Set all the motor control pins as outputs
@@ -54,8 +53,39 @@ void setup() {
     Serial.println(boardName);
   }
 
+  // Load WiFi credentials from preferences
+  ssid = preferences.getString("ssid", ssid);
+  password = preferences.getString("password", password);
+
+  // Check if WiFi should be enabled (stored in preferences)
+  useWiFi = preferences.getBool("useWiFi", false);
+  Serial.print("WiFi is ");
+  Serial.println(useWiFi ? "enabled" : "disabled");
+
+  if (useWiFi) {
+    initializeWiFi();
+  }
+
+  Serial.println("Setup complete. Type 'HELP' for available commands.");
+}
+
+void loop() {
+  if (useWiFi) {
+    handleWiFi();
+  }
+
+  // Check for serial input
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+    String result = processCommand(command);
+    Serial.println(result);
+  }
+}
+
+void initializeWiFi() {
   // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid.c_str(), password.c_str());
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
@@ -72,7 +102,7 @@ void setup() {
     Serial.println("Error setting up mDNS responder!");
   } else {
     Serial.println("mDNS responder started");
-    MDNS.addService("http", "tcp", 80);
+    MDNS.addService("motor", "tcp", 80);
   }
 
   // Start the server
@@ -80,25 +110,18 @@ void setup() {
   Serial.println("Server started");
 }
 
-void loop() {
+void handleWiFi() {
   // Check WiFi connection status
   if (WiFi.status() != WL_CONNECTED) {
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("WiFi disconnected. Attempting to reconnect...");
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid.c_str(), password.c_str());
     while (WiFi.status() != WL_CONNECTED) {
       delay(1000);
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
     Serial.println("Reconnected to WiFi");
     digitalWrite(LED_BUILTIN, HIGH);
-  }
-
-  // Check for incoming serial commands
-  if (Serial.available()) {
-    String command = Serial.readStringUntil('\n');
-    String result = processCommand(command);
-    Serial.println(result);
   }
 
   // Check for incoming WiFi clients
@@ -122,8 +145,61 @@ void loop() {
 String processCommand(String command) {
   command.trim();
 
-  if (command == "GET_NAME") {
+  if (command == "HELP" || command == "?") {
+    return getHelpText();
+  } else if (command == "GET_NAME") {
     return "Board Name: " + boardName;
+  } else if (command.startsWith("SET_NAME ")) {
+    String newName = command.substring(9); // "SET_NAME " is 9 characters
+    if (isValidMDNSName(newName)) {
+      boardName = newName;
+      preferences.putString("boardName", boardName);
+      if (useWiFi) {
+        // Restart mDNS with new name
+        MDNS.end();
+        if (!MDNS.begin(boardName.c_str())) {
+          return "Error setting up mDNS responder with new name!";
+        }
+        MDNS.addService("motor", "tcp", 80);
+      }
+      return "Board name updated to: " + boardName;
+    } else {
+      return "Invalid board name. Use only letters, numbers, and hyphens. Don't start or end with a hyphen. Max length is 63 characters.";
+    }
+  } else if (command == "WIFI_ON") {
+    if (!useWiFi) {
+      useWiFi = true;
+      preferences.putBool("useWiFi", true);
+      initializeWiFi();
+      return "WiFi enabled and initialized";
+    }
+    return "WiFi is already enabled";
+  } else if (command == "WIFI_OFF") {
+    if (useWiFi) {
+      useWiFi = false;
+      preferences.putBool("useWiFi", false);
+      WiFi.disconnect(true);
+      WiFi.mode(WIFI_OFF);
+      return "WiFi disabled";
+    }
+    return "WiFi is already disabled";
+  } else if (command == "WIFI_STATUS") {
+    return useWiFi ? "WiFi is enabled" : "WiFi is disabled";
+  } else if (command.startsWith("SET_WIFI ")) {
+    int firstSpace = command.indexOf(' ');
+    int secondSpace = command.indexOf(' ', firstSpace + 1);
+    if (secondSpace == -1) {
+      return "Invalid SET_WIFI command. Use format: SET_WIFI SSID PASSWORD";
+    }
+    String newSSID = command.substring(firstSpace + 1, secondSpace);
+    String newPassword = command.substring(secondSpace + 1);
+    ssid = newSSID;
+    password = newPassword;
+    preferences.putString("ssid", ssid);
+    preferences.putString("password", password);
+    return "WiFi credentials updated. SSID: " + ssid;
+  } else if (command == "GET_WIFI") {
+    return "Current SSID: " + ssid;
   }
 
   String motor = command.substring(0, command.indexOf(' '));
@@ -170,7 +246,6 @@ String processCommand(String command) {
       result = "Invalid action for MOTOR_A. Use FORWARD, REVERSE, BRAKE, or STANDBY.";
     }
   }
-  
   // Control MOTOR-B
   else if (motor == "MOTOR_B") {
     if (action == "FORWARD") {
@@ -199,7 +274,6 @@ String processCommand(String command) {
       result = "Invalid action for MOTOR_B. Use FORWARD, REVERSE, BRAKE, or STANDBY.";
     }
   }
-  
   else {
     result = "Invalid motor. Use MOTOR_A or MOTOR_B.";
   }
@@ -207,11 +281,51 @@ String processCommand(String command) {
   return result;
 }
 
+String getHelpText() {
+  String helpText = "Available commands:\n\n";
+  helpText += "HELP or ?                    : Show this help message\n";
+  helpText += "GET_NAME                     : Get the current board name\n";
+  helpText += "SET_NAME <name>              : Set a new board name (letters, numbers, hyphens only)\n";
+  helpText += "WIFI_ON                      : Enable WiFi\n";
+  helpText += "WIFI_OFF                     : Disable WiFi\n";
+  helpText += "WIFI_STATUS                  : Check WiFi status\n";
+  helpText += "SET_WIFI <ssid> <password>   : Set WiFi credentials\n";
+  helpText += "GET_WIFI                     : Get current WiFi SSID\n";
+  helpText += "MOTOR_A <action> [<pwm>]     : Control Motor A\n";
+  helpText += "MOTOR_B <action> [<pwm>]     : Control Motor B\n\n";
+  helpText += "Motor actions:\n";
+  helpText += "  FORWARD <pwm>  : Move forward (PWM: 1-100)\n";
+  helpText += "  REVERSE <pwm>  : Move in reverse (PWM: 1-100)\n";
+  helpText += "  BRAKE          : Apply brake\n";
+  helpText += "  STANDBY        : Enter standby mode\n";
+  return helpText;
+}
+
 String generateRandomName(int length) {
-  String charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  String charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   String randomName = "";
   for (int i = 0; i < length; i++) {
-    randomName += charset[random(0, charset.length())];
+    if (i == 0) {
+      // Ensure the first character is a letter
+      randomName += charset[random(0, 26)];
+    } else {
+      randomName += charset[random(0, charset.length())];
+    }
   }
   return randomName;
+}
+
+bool isValidMDNSName(const String& name) {
+  if (name.length() == 0 || name.length() > 63) {
+    return false;
+  }
+  
+  for (int i = 0; i < name.length(); i++) {
+    char c = name.charAt(i);
+    if (!(isalnum(c) || c == '-') || (i == 0 && c == '-') || (i == name.length() - 1 && c == '-')) {
+      return false;
+    }
+  }
+  
+  return true;
 }

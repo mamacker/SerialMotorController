@@ -1,22 +1,60 @@
-import serial
-import time
+import socket
+import subprocess
 import serial.tools.list_ports
+import time
+import platform
+import select
 
 class MotorController:
-    def __init__(self, serial_port, baudrate=460800, timeout=1, name=None):
-        self.name = name or serial_port  # Assign a name or default to the serial port
-        self.ser = serial.Serial(serial_port, baudrate, timeout=timeout)
-        self.ser.flush()
+    def __init__(self, connection, baudrate=460800, timeout=1, name=None):
+        self.name = name or connection
+        self.baudrate = baudrate
+        self.timeout = timeout
+        self.connection = connection
+        self.is_serial = isinstance(connection, str) and (connection.startswith('/dev/') or connection.startswith('COM'))
+        self.is_tcp = isinstance(connection, str) and ':' in connection
         # Inversion flags for motors A and B
         self.invert_motor_a = False
         self.invert_motor_b = False
         self.last_command_a = None
         self.last_command_b = None
 
+        if self.is_serial:
+            self.ser = serial.Serial(connection, baudrate, timeout=timeout, write_timeout=timeout)
+            self.ser.flush()
+        elif self.is_tcp:
+            address, port = connection.split(':')
+            self._connect_tcp()
+
+    def _connect_tcp(self):
+        """Helper method to establish a TCP connection."""
+        address, port = self.connection.split(':')
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_socket.settimeout(self.timeout)
+        self.tcp_socket.connect((address, int(port)))
+
     def send_command(self, command):
-        """Sends a command to the motor controller via serial."""
         print(f"[{self.name}] Sending command: {command.strip()}")
-        self.ser.write(command.encode('utf-8'))
+
+        if self.is_serial:
+            self.ser.write(command.encode('utf-8'))
+            return self.ser.readline().decode('utf-8').strip()
+        elif self.is_tcp:
+            try:
+                ready_to_write = select.select([], [self.tcp_socket], [], self.timeout)
+                if ready_to_write[1]:
+                    self.tcp_socket.sendall(command.encode('utf-8'))
+                    ready_to_read = select.select([self.tcp_socket], [], [], self.timeout)
+                    if ready_to_read[0]:
+                        return self.tcp_socket.recv(1024).decode('utf-8').strip()
+                    else:
+                        return "No response received within timeout"
+                else:
+                    return "Socket not ready for writing within timeout"
+            except (socket.error, socket.timeout) as e:
+                print(f"Connection error: {e}. Attempting to reconnect...")
+                self._connect_tcp()
+                return self.send_command(command)
 
     def set_value(self, motor, action, pwm_value=None):
         """Builds and sends a motor command string with inversion handling."""
@@ -49,7 +87,8 @@ class MotorController:
             if ( self.last_command_b == command ):
                 return
             self.last_command_b = command 
-        self.send_command(command)
+        send_res = self.send_command(command)
+        print(f"[{self.name}] Response: {send_res}")
 
     def set_invert(self, motor, invert):
         """Sets the inversion flag for the specified motor."""
@@ -61,8 +100,10 @@ class MotorController:
             print(f"[{self.name}] Invert MOTOR_B set to {invert}")
 
     def close(self):
-        """Closes the serial connection."""
-        self.ser.close()
+        if self.is_serial:
+            self.ser.close()
+        elif self.is_tcp:
+            self.tcp_socket.close()
 
 class RobotClass:
     def __init__(self):
@@ -70,9 +111,10 @@ class RobotClass:
 
     def find_motor_controllers(self, baudrate=460800, timeout=.2):
         """
-        Scans all available serial ports and checks if a motor controller is connected.
+        Scans all available serial ports and network for motor controllers.
         If a valid motor controller is found, it stores the controller and its name.
         """
+        # Scan serial ports
         available_ports = list(serial.tools.list_ports.comports())
         for port in available_ports:
             try:
@@ -97,18 +139,48 @@ class RobotClass:
             except Exception as e:
                 print(f"Error checking port {port.device}: {e}")
 
-    def add_motor_controller(self, controller_id, serial_port, baudrate=460800, timeout=1, name=None):
+        # Scan network using avahi-browse or dns-sd
+        try:
+            if platform.system() == 'Windows':
+                result = subprocess.run(['dns-sd', '-B', '_motor._tcp'], capture_output=True, text=True, timeout=5)
+            else:
+                result = subprocess.run(['timeout', '15', 'avahi-browse', '-r', '_motor._tcp'], capture_output=True, text=True)
+            
+            print(result.stdout)
+            lines = result.stdout.split('\n')
+            print("---------------------------------")
+            print(lines)
+            print("---------------------------------")
+            service_name, address, port = None, None, None
+            for line in lines:
+                print(line)
+                if 'hostname' in line:
+                    service_name = line.split('=')[-1].strip().strip('[]')
+                elif 'address' in line:
+                    address = line.split('=')[-1].strip().strip('[]')
+                elif 'port' in line:
+                    port = line.split('=')[-1].strip().strip('[]')
+                    if service_name and address and port:
+                        print(f"Motor controller found on {address}:{port}, name: {service_name}")
+                        self.add_motor_controller(service_name, f"{address}:{port}", baudrate, 15)
+                        service_name, address, port = None, None, None
+        except subprocess.TimeoutExpired:
+            return
+        except Exception as e:
+            print(f"Error scanning network for motor controllers: {e}")
+
+    def add_motor_controller(self, controller_id, connection, baudrate=460800, timeout=1, name=None):
         """
         Adds a new motor controller to the robot.
 
         Parameters:
         - controller_id: Unique ID for the motor controller.
-        - serial_port: Serial port for the controller.
+        - connection: Serial port or TCP address for the controller.
         - baudrate: Baudrate for the serial connection (default is 460800).
-        - timeout: Timeout for the serial connection (default is 1 second).
-        - name: Optional name to give the motor controller (default is serial port).
+        - timeout: Timeout for the connection (default is 1 second).
+        - name: Optional name to give the motor controller (default is connection).
         """
-        self.controllers[controller_id] = MotorController(serial_port, baudrate, timeout, name)
+        self.controllers[controller_id] = MotorController(connection, baudrate, timeout, name)
 
     def set_value(self, controller_id, property_name, value):
         """
@@ -196,3 +268,7 @@ if __name__ == '__main__':
         robot.close()  # Ensure all serial connections are closed
 
 
+
+        # Now you can set values for controllers that were automatically found
+        for controller_id in robot.controllers:
+            print(f"Setting values for {controller_id}")

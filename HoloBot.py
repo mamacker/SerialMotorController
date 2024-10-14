@@ -2,9 +2,9 @@ import time
 from Robot import RobotClass  # Assuming Robot.py is in the same directory
 from Gamepad import GamepadClass  # Assuming Gamepad.py is in the same directory
 
-front_left_mod = .8 
+front_left_mod = 1 
 front_right_mod = 1
-rear_left_mod = 1
+rear_left_mod = 1  
 rear_right_mod = 1
 
 # Initialize the gamepad and robot
@@ -23,15 +23,15 @@ if len(robot.controllers) < 2:
 controller_ids = list(robot.controllers.keys())[:2]
 controller_id_1 = controller_ids[0]  # Controls two motors (MOTOR_A and MOTOR_B)
 print("Controller 1", controller_id_1);
-controller_id_1 = "HWMDBDDVUD"
+controller_id_1 = "newtest"
 controller_id_2 = controller_ids[1]  # Controls two motors (MOTOR_C and MOTOR_D)
-controller_id_2 = "AXTDAORLJE";
+controller_id_2 = "PCUHFVRRMA";
 
 print("Controller 2", controller_id_2);
 
 # Optionally invert motor directions for specific wheels
-robot.set_value(controller_id_1, "invert_velocity_a", 1)  # Front left wheel
-robot.set_value(controller_id_1, "invert_velocity_b", 1)  # Front right wheel
+robot.set_value(controller_id_1, "invert_velocity_a", 0)  # Front left wheel
+robot.set_value(controller_id_1, "invert_velocity_b", 0)  # Front right wheel
 robot.set_value(controller_id_2, "invert_velocity_a", 0)  # Rear left wheel
 robot.set_value(controller_id_2, "invert_velocity_b", 0)  # Rear right wheel
 
@@ -69,8 +69,8 @@ try:
         robot.set_value(controller_id_1, "velocity_b", front_right_pwm)
 
         # Rear left (MOTOR_A of controller_id_2) and rear right (MOTOR_B of controller_id_2)
-        robot.set_value(controller_id_2, "velocity_a", rear_left_pwm)
-        robot.set_value(controller_id_2, "velocity_b", rear_right_pwm)
+        robot.set_value(controller_id_2, "velocity_b", rear_left_pwm)
+        robot.set_value(controller_id_2, "velocity_a", rear_right_pwm)
 
         print(front_left_pwm, " ----- ", front_right_pwm);
         print(rear_right_pwm, " ----- ", rear_left_pwm);

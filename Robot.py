@@ -109,7 +109,7 @@ class RobotClass:
     def __init__(self):
         self.controllers = {}
 
-    def find_motor_controllers(self, baudrate=460800, timeout=.2):
+    def find_motor_controllers(self, baudrate=460800, timeout=.2, serial_only=True):
         """
         Scans all available serial ports and network for motor controllers.
         If a valid motor controller is found, it stores the controller and its name.
@@ -140,34 +140,35 @@ class RobotClass:
                 print(f"Error checking port {port.device}: {e}")
 
         # Scan network using avahi-browse or dns-sd
-        try:
-            if platform.system() == 'Windows':
-                result = subprocess.run(['dns-sd', '-B', '_motor._tcp'], capture_output=True, text=True, timeout=5)
-            else:
-                result = subprocess.run(['timeout', '15', 'avahi-browse', '-r', '_motor._tcp'], capture_output=True, text=True)
-            
-            print(result.stdout)
-            lines = result.stdout.split('\n')
-            print("---------------------------------")
-            print(lines)
-            print("---------------------------------")
-            service_name, address, port = None, None, None
-            for line in lines:
-                print(line)
-                if 'hostname' in line:
-                    service_name = line.split('=')[-1].strip().strip('[]')
-                elif 'address' in line:
-                    address = line.split('=')[-1].strip().strip('[]')
-                elif 'port' in line:
-                    port = line.split('=')[-1].strip().strip('[]')
-                    if service_name and address and port:
-                        print(f"Motor controller found on {address}:{port}, name: {service_name}")
-                        self.add_motor_controller(service_name, f"{address}:{port}", baudrate, 15)
-                        service_name, address, port = None, None, None
-        except subprocess.TimeoutExpired:
-            return
-        except Exception as e:
-            print(f"Error scanning network for motor controllers: {e}")
+        if not serial_only:
+            try:
+                if platform.system() == 'Windows':
+                    result = subprocess.run(['dns-sd', '-B', '_motor._tcp'], capture_output=True, text=True, timeout=5)
+                else:
+                    result = subprocess.run(['timeout', '15', 'avahi-browse', '-r', '_motor._tcp'], capture_output=True, text=True)
+                
+                print(result.stdout)
+                lines = result.stdout.split('\n')
+                print("---------------------------------")
+                print(lines)
+                print("---------------------------------")
+                service_name, address, port = None, None, None
+                for line in lines:
+                    print(line)
+                    if 'hostname' in line:
+                        service_name = line.split('=')[-1].strip().strip('[]')
+                    elif 'address' in line:
+                        address = line.split('=')[-1].strip().strip('[]')
+                    elif 'port' in line:
+                        port = line.split('=')[-1].strip().strip('[]')
+                        if service_name and address and port:
+                            print(f"Motor controller found on {address}:{port}, name: {service_name}")
+                            self.add_motor_controller(service_name, f"{address}:{port}", baudrate, 15)
+                            service_name, address, port = None, None, None
+            except subprocess.TimeoutExpired:
+                return
+            except Exception as e:
+                print(f"Error scanning network for motor controllers: {e}")
 
     def add_motor_controller(self, controller_id, connection, baudrate=460800, timeout=1, name=None):
         """
@@ -181,6 +182,7 @@ class RobotClass:
         - name: Optional name to give the motor controller (default is connection).
         """
         self.controllers[controller_id] = MotorController(connection, baudrate, timeout, name)
+        print("Added motor controller:", controller_id, " controller ct: ", len(self.controllers))
 
     def set_value(self, controller_id, property_name, value):
         """

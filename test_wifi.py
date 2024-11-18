@@ -53,12 +53,6 @@ if __name__ == '__main__':
             controller_2 = motor_controllers[index_2]
             save_motor_controllers(controller_1, controller_2)
 
-        # Example usage of the motor controllers
-        robot.set_value(controller_1, 'invert_velocity_a', 1)
-        robot.set_value(controller_1, 'invert_velocity_b', 0)
-        robot.set_value(controller_2, 'invert_velocity_a', 0)
-        robot.set_value(controller_2, 'invert_velocity_b', 1)
-
         c1_a = 0
         c1_b = 0
         c2_a = 0

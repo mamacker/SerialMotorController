@@ -5,6 +5,41 @@
 String ssid = "DEFAULT_SSID";
 String password = "DEFAULT_PASSWORD";
 
+// This is a commandBuffer FIFO style.
+// If a new command comes in before all the old commands are popped off
+// and there is no more space.  The older commands will get dropped.
+String commandQueue[100];
+int queueStart = 0;
+int queueEnd = 0;
+
+void pushCommand(String command) {
+
+  if ((queueEnd + 1) % 100 == queueStart) {
+    // Queue is full, drop the oldest command
+    queueStart = (queueStart + 1) % 100;
+  }
+  commandQueue[queueEnd] = command;
+  queueEnd = (queueEnd + 1) % 100;
+}
+
+String popCommand() {
+  if (queueStart == queueEnd) {
+    // Queue is empty
+    return "";
+  }
+  String command = commandQueue[queueStart];
+  queueStart = (queueStart + 1) % 100;
+  return command;
+}
+
+int peekCommandCount() {
+  if (queueEnd >= queueStart) {
+    return queueEnd - queueStart;
+  } else {
+    return 100 - queueStart + queueEnd;
+  }
+}
+
 // Define the H-bridge control pins
 const int IN1 = 22;  // IN1 pin for MOTOR-A
 const int IN2 = 21;  // IN2 pin for MOTOR-A
@@ -78,9 +113,23 @@ void loop() {
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
     command.trim();
-    String result = processCommand(command);
-    Serial.println(result);
+    pushCommand(command);
   }
+
+  // See if there are commands to pull off the queue
+  String res = checkStack();
+  if (res.length() > 0) {
+    Serial.println(res);
+  }
+}
+
+String checkStack() {
+  if (peekCommandCount() > 0) {
+    String command = popCommand();
+    String result = processCommand(command);
+    return result;
+  }
+  return "";
 }
 
 void initializeWiFi() {
@@ -129,12 +178,14 @@ void handleWiFi() {
   if (client) {
     Serial.println("New client connected");
     while (client.connected()) {
-      if (client.available()) {
+      while (client.available()) {
         String command = client.readStringUntil('\n');
         command.trim();
-        String result = processCommand(command);
-        client.println(result);
-        Serial.println("Sent to client: " + result);
+        pushCommand(command);
+      }
+
+      while (peekCommandCount() > 0) {
+        client.println(checkStack());
       }
     }
     client.stop();

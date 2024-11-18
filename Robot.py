@@ -115,29 +115,30 @@ class RobotClass:
         If a valid motor controller is found, it stores the controller and its name.
         """
         # Scan serial ports
-        available_ports = list(serial.tools.list_ports.comports())
-        for port in available_ports:
-            try:
-                print(f"Checking port {port.device}...")
-                ser = serial.Serial(port.device, baudrate, timeout=timeout, write_timeout=timeout)
-                ser.flush()
+        if serial_only:
+            available_ports = list(serial.tools.list_ports.comports())
+            for port in available_ports:
+                try:
+                    print(f"Checking port {port.device}...")
+                    ser = serial.Serial(port.device, baudrate, timeout=timeout, write_timeout=timeout)
+                    ser.flush()
 
-                # Send a GET_NAME command to check if it's a motor controller
-                ser.write(b"GET_NAME\n")
-                time.sleep(0.1)  # Allow time for the controller to respond
+                    # Send a GET_NAME command to check if it's a motor controller
+                    ser.write(b"GET_NAME\n")
+                    time.sleep(0.1)  # Allow time for the controller to respond
 
-                if ser.in_waiting > 0:
-                    response = ser.readline().decode('utf-8').strip()
-                    if "Board Name:" in response:
-                        # Extract the name from the response
-                        name = response.split(":")[-1].strip()
-                        print(f"Motor controller found on {port.device}, name: {name}")
-                        ser.close()
-                        # Store the controller
-                        self.add_motor_controller(name, port.device, baudrate, timeout)
-                ser.close()
-            except Exception as e:
-                print(f"Error checking port {port.device}: {e}")
+                    if ser.in_waiting > 0:
+                        response = ser.readline().decode('utf-8').strip()
+                        if "Board Name:" in response:
+                            # Extract the name from the response
+                            name = response.split(":")[-1].strip()
+                            print(f"Motor controller found on {port.device}, name: {name}")
+                            ser.close()
+                            # Store the controller
+                            self.add_motor_controller(name, port.device, baudrate, timeout)
+                    ser.close()
+                except Exception as e:
+                    print(f"Error checking port {port.device}: {e}")
 
         # Scan network using avahi-browse or dns-sd
         if not serial_only:

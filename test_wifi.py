@@ -5,20 +5,38 @@ from Keyboard import KeyboardClass  # Import the Keyboard class from Keyboard.py
 if __name__ == '__main__':
     try:
         robot = RobotClass()  # Create an instance of the Robot class
-        robot.find_motor_controllers(serial_only=False);
-        Keyboard = KeyboardClass();
-        controller_1 = "DT255GKCYS.local"
-        robot.set_value(controller_1, 'invert_veloctiy_a', 1)
+        robot.find_motor_controllers(serial_only=False)  # Find motor controllers
+
+        # Get the list of motor controller names
+        motor_controllers = list(robot.controllers.keys())
+
+        # Display the list of found motor controllers
+        print("Found motor controllers:")
+        for i, controller in enumerate(motor_controllers):
+            print(f"{i + 1}: {controller}")
+
+        # Ask the user to pick two motor controllers
+        index_1 = int(input("Enter the number of the first motor controller: ")) - 1
+        index_2 = int(input("Enter the number of the second motor controller: ")) - 1
+
+        controller_1 = motor_controllers[index_1]
+        controller_2 = motor_controllers[index_2]
+
+        # Example usage of the motor controllers
+        robot.set_value(controller_1, 'invert_velocity_a', 1)
         robot.set_value(controller_1, 'invert_velocity_b', 0)
-        controller_2 = "LUPNORMQDC.local"
         robot.set_value(controller_2, 'invert_velocity_a', 0)
-        robot.set_value(controller_2, 'invert_veolcity_b', 1)
+        robot.set_value(controller_2, 'invert_velocity_b', 1)
+
         c1_a = 0
         c1_b = 0
         c2_a = 0
         c2_b = 0
         keyPressed = False
-        while(True):
+
+        Keyboard = KeyboardClass()
+
+        while True:
             keyPressed = False
             if Keyboard.get_value('w'):
                 keyPressed = True
